@@ -1,0 +1,60 @@
+[package]
+name = "wasm-net"
+version = "0.1.0"
+authors = [ "Denis Tsai <dt665m@gmail.com>", "Andrey Petrov <shazow@gmail.com>"]
+description = "maybe libp2p-rs with wasm is better than js-libp2p"
+license = "MIT"
+edition = "2018"
+
+[[bin]]
+name = "bootnode"
+path = "bin/main.rs"
+required-features = ["native"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies.libp2p]
+version = "0.49.0"
+path = "../../rust-libp2p"
+default-features = false
+features = ["websocket", "mplex", "yamux", "noise", "ping", "wasm-ext", "tcp-async-io", "dns-async-std","floodsub", "mdns-async-io", "dns-async-std"]
+
+[dependencies]
+log = "0.4.8"
+futures = { version = "0.3.4", features = ["compat"] }
+
+async-std = { version = "1.5", optional = true }
+env_logger = { version = "0.7", optional = true }
+
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+libp2p-wasm-ext = { version = "0.36.0", path = "../../rust-libp2p/transports/wasm-ext", features = ["websocket"], optional = true }
+console_error_panic_hook = { version = "0.1.6", optional = true }
+console_log = { version = "0.1.2", optional = true }
+
+# Side effects and Replacements
+clear_on_drop = { version = "0.2.3", features = ["no_cc"] }
+rand6 = { package = "rand", version = "0.6", features = ["wasm-bindgen"], optional = true }
+rand = { version = "0.7", features = ["wasm-bindgen"], optional = true }
+futures-timer = { version = "3.0.1", features = ["wasm-bindgen"], optional = true }
+chrono = { version = "0.4", features = ["wasmbind"], optional = true }
+getrandom = { version = "0.2", features = ["js"] }
+
+[features]
+default = ["native"]
+native = [
+    "async-std",
+    "env_logger",
+]
+browser = [
+	"libp2p-wasm-ext",
+	"wasm-bindgen",
+	"wasm-bindgen-futures",
+  "console_log",
+  "console_error_panic_hook",
+  "rand6",
+  "rand",
+  "futures-timer",
+  "chrono",
+]
