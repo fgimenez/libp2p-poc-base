@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies.libp2p]
 version = "0.49.0"
-path = "../../rust-libp2p"
+path = "../libp2p"
 default-features = false
 features = ["websocket", "mplex", "yamux", "noise", "ping", "wasm-ext", "tcp-async-io", "dns-async-std","floodsub", "mdns-async-io", "dns-async-std"]
 
@@ -29,7 +29,7 @@ env_logger = { version = "0.7", optional = true }
 
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
-libp2p-wasm-ext = { version = "0.36.0", path = "../../rust-libp2p/transports/wasm-ext", features = ["websocket"], optional = true }
+libp2p-wasm-ext = { version = "0.36.0", path = "../libp2p/transports/wasm-ext", features = ["websocket"], optional = true }
 console_error_panic_hook = { version = "0.1.6", optional = true }
 console_log = { version = "0.1.2", optional = true }
 
