@@ -22,7 +22,7 @@ export default {
 
       const client = await this.$wasm.start_client(
         "/ip4/127.0.0.1/tcp/38615/ws",
-        "info"
+        "debug"
       );
       console.log("rust libp2p client:", client);
     }
