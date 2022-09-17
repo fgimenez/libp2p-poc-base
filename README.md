@@ -21,12 +21,9 @@ cargo build --bin bootnode
 
 # Run the local service, take note of the multiaddr
 target/debug/bootnode
-
-# Edit the multiaddr in $/views/Home.vue and "yarn serve" the vue project and click woo.  In the native terminal you can now send messages to the browser
-# currently, the browser can't send messages, the plumbing isn't done yet.
 ```
 
 ## Frontend
 ```
-rm -rf node_modules/wasm-net && yarn add file:./wasm-net/pkg && yarn serve
+rm -rf node_modules/wasm-net && yarn add file:./wasm-net/pkg && yarn && yarn serve
 ```

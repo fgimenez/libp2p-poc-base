@@ -161,7 +161,7 @@ pub fn service(
                         send_back_addr,
                     } => {
                         log::info!(
-                            "Incoooming! local_addr: {} send_back_addr: {}",
+                            "Incoming connection local_addr: {} send_back_addr: {}",
                             local_addr,
                             send_back_addr
                         )
