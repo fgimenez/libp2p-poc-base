@@ -1,3 +1,4 @@
 [submodule "libp2p"]
 	path = libp2p
 	url = https://github.com/libp2p/rust-libp2p.git
+  ignore = dirty
