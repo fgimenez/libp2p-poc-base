@@ -17,14 +17,17 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 # Install yarn
 ```
 
-## Rust Deps
+## Sync submodules and apply patches
+```sh
+scripts/apply-patches.sh
 ```
-# Run the run backend script
+
+## Backend
+```sh
 ./scripts/run-backend.sh
 ```
 
 ## Frontend
-```
-# Run the run backend script
+```sh
 ./scripts/run-backend.sh
 ```
