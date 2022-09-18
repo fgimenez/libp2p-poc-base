@@ -4,13 +4,10 @@ mod browser;
 use futures::prelude::*;
 use libp2p::core::transport::OptionalTransport;
 use libp2p::multiaddr::Protocol;
+use libp2p::ping::{Ping, PingConfig};
 use libp2p::swarm::Swarm;
 use libp2p::{
-    core,
-    floodsub::{self, Floodsub, FloodsubEvent},
-    identity, mplex, noise,
-    swarm::SwarmEvent,
-    wasm_ext, yamux, Multiaddr, NetworkBehaviour, PeerId, Transport,
+    core, identity, mplex, noise, swarm::SwarmEvent, wasm_ext, yamux, Multiaddr, PeerId, Transport,
 };
 use std::borrow::Cow;
 use std::net::Ipv4Addr;
@@ -20,7 +17,7 @@ use std::task::Poll;
 use libp2p::{dns, tcp, websocket};
 
 #[cfg(not(target_os = "unknown"))]
-use async_std::{io, task};
+use async_std::task;
 
 // This is lifted from the rust libp2p-rs gossipsub and massaged to work with wasm.
 // The "glue" to get messages from the browser injected into this service isn't done yet.
@@ -67,36 +64,9 @@ pub fn service(
         .timeout(std::time::Duration::from_secs(20))
         .boxed();
 
-    // Create a Floodsub topic
-    let floodsub_topic = floodsub::Topic::new("chat");
-
-    // We create a custom network behaviour that combines floodsub and mDNS.
-    // Use the derive to generate delegating NetworkBehaviour impl.
-    #[derive(NetworkBehaviour)]
-    #[behaviour(out_event = "OutEvent")]
-    struct MyBehaviour {
-        floodsub: Floodsub,
-    }
-
-    #[allow(clippy::large_enum_variant)]
-    #[derive(Debug)]
-    enum OutEvent {
-        Floodsub(FloodsubEvent),
-    }
-
-    impl From<FloodsubEvent> for OutEvent {
-        fn from(v: FloodsubEvent) -> Self {
-            Self::Floodsub(v)
-        }
-    }
-
     // Create a Swarm to manage peers and events
     let mut swarm = {
-        let mut behaviour = MyBehaviour {
-            floodsub: Floodsub::new(local_peer_id),
-        };
-
-        behaviour.floodsub.subscribe(floodsub_topic.clone());
+        let behaviour = Ping::new(PingConfig::new().with_keep_alive(true));
 
         libp2p::Swarm::new(transport, behaviour, local_peer_id)
     };
@@ -119,77 +89,48 @@ pub fn service(
         println!("Dialed {}", addr)
     }
 
-    #[cfg(not(target_os = "unknown"))]
-    let mut stdin = io::BufReader::new(io::stdin()).lines().fuse();
-
     let mut listening = false;
 
-    future::poll_fn(move |cx| {
-        #[cfg(not(target_os = "unknown"))]
-        loop {
-            match stdin.try_poll_next_unpin(cx) {
-                Poll::Ready(Some(Ok(line))) => {
-                    for peer in swarm.connected_peers() {
-                        log::info!("peer: {}", peer);
-                    }
-                    swarm
-                        .behaviour_mut()
-                        .floodsub
-                        .publish(floodsub_topic.clone(), line.as_bytes())
+    future::poll_fn(move |cx| loop {
+        match swarm.poll_next_unpin(cx) {
+            Poll::Ready(Some(event)) => match event {
+                SwarmEvent::NewListenAddr { address, .. } => {
+                    log::info!("Listening on {:?}", address);
                 }
-                Poll::Ready(Some(Err(_))) => panic!("Stdin errored"),
-                Poll::Ready(None) => panic!("Stdin closed"),
-                Poll::Pending => break,
-            };
-        }
-
-        loop {
-            match swarm.poll_next_unpin(cx) {
-                Poll::Ready(Some(event)) => match event {
-                    SwarmEvent::NewListenAddr { address, .. } => {
-                        log::info!("Listening on {:?}", address);
-                    }
-                    SwarmEvent::Behaviour(OutEvent::Floodsub(FloodsubEvent::Message(message))) => {
-                        log::info!(
-                            "Received: '{:?}' from {:?}",
-                            String::from_utf8_lossy(&message.data),
-                            message.source
-                        );
-                    }
-                    SwarmEvent::IncomingConnection {
+                SwarmEvent::Behaviour(event) => log::info!("{:?}", event),
+                SwarmEvent::IncomingConnection {
+                    local_addr,
+                    send_back_addr,
+                } => {
+                    log::info!(
+                        "Incoming connection local_addr: {} send_back_addr: {}",
+                        local_addr,
+                        send_back_addr
+                    )
+                }
+                SwarmEvent::IncomingConnectionError {
+                    local_addr,
+                    send_back_addr,
+                    error,
+                } => {
+                    log::info!(
+                        "Incoming err local_addr: {} send_back_addr: {}, err: {}",
                         local_addr,
                         send_back_addr,
-                    } => {
-                        log::info!(
-                            "Incoming connection local_addr: {} send_back_addr: {}",
-                            local_addr,
-                            send_back_addr
-                        )
-                    }
-                    SwarmEvent::IncomingConnectionError {
-                        local_addr,
-                        send_back_addr,
-                        error,
-                    } => {
-                        log::info!(
-                            "Incoming err local_addr: {} send_back_addr: {}, err: {}",
-                            local_addr,
-                            send_back_addr,
-                            error
-                        )
-                    }
-                    _ => {}
-                },
-                Poll::Ready(None) => return Poll::Ready(()),
-                Poll::Pending => {
-                    if !listening {
-                        for addr in Swarm::listeners(&swarm) {
-                            log::info!("Listening on {}", addr);
-                            listening = true;
-                        }
-                    }
-                    return Poll::Pending;
+                        error
+                    )
                 }
+                _ => {}
+            },
+            Poll::Ready(None) => return Poll::Ready(()),
+            Poll::Pending => {
+                if !listening {
+                    for addr in Swarm::listeners(&swarm) {
+                        log::info!("Listening on {}", addr);
+                        listening = true;
+                    }
+                }
+                return Poll::Pending;
             }
         }
     })
