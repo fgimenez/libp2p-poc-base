@@ -1,7 +1,6 @@
 # libp2p-poc
 
-## Rust Deps
-
+## Prerrequisites
 ```sh
 # install rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -13,17 +12,19 @@ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 rustup target add wasm32-unknown-unknown
 rustup target add wasm32-unknown-unknown --toolchain nightly
 
-# Build the browser pkg (linked in root/package.json)
-wasm-pack build --dev -- --features browser
+# Install nodejs
 
-# Build the native service
-cargo build --bin bootnode
+# Install yarn
+```
 
-# Run the local service, take note of the multiaddr
-target/debug/bootnode
+## Rust Deps
+```
+# Run the run backend script
+./scripts/run-backend.sh
 ```
 
 ## Frontend
 ```
-rm -rf node_modules/wasm-net && yarn add file:./wasm-net/pkg && yarn && yarn serve
+# Run the run backend script
+./scripts/run-backend.sh
 ```
