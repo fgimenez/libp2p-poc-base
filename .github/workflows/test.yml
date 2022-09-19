@@ -1,0 +1,31 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update && \
+          apt-get upgrade -y && \
+          apt-get install -y --no-install-recommends \
+            chromium-chromedriver
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install Protoc (required by libp2p-core)
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.x'
+      - uses: jetli/wasm-pack-action@v0.3.0
+        with:
+          version: 'latest'
+      - name: Test
+        run: |
+          scripts/run-tests.sh
