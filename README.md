@@ -1,3 +1,5 @@
+[![Test](https://github.com/fgimenez/libp2p-poc/actions/workflows/test.yml/badge.svg)](https://github.com/fgimenez/libp2p-poc/actions/workflows/test.yml)
+
 # libp2p-poc
 
 Connectivity tests between libp2p nodes: browser <-> desktop, browser <-> browser.
