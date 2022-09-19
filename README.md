@@ -1,5 +1,7 @@
 # libp2p-poc
 
+Connectivity tests between libp2p nodes: browser <-> desktop, browser <-> browser.
+
 ## Prerrequisites
 ```sh
 # install rust
@@ -22,12 +24,23 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 scripts/apply-patches.sh
 ```
 
-## Backend
+## Backend node
+On a shell console run:
 ```sh
 ./scripts/run-backend.sh
 ```
+You wil see the logs from the desktop node.
 
 ## Frontend
+On a different shell console:
 ```sh
 ./scripts/run-backend.sh
 ```
+Once the app is running open http://localhost:8080 in a browser (tested on Chrome)
+and click on `Do woo`.
+
+This will trigger the connection from the browser to the backend node, you will
+start seeing log entries about the interaction in the backend node shell console
+open previously.
+
+You can also open the browser console to check the logs printed by the browser node.
