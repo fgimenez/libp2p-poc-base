@@ -14,7 +14,9 @@ jobs:
           sudo apt-get upgrade -y && \
           sudo apt-get install -y --no-install-recommends \
             chromium-chromedriver
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
