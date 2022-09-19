@@ -19,6 +19,9 @@ use libp2p::{dns, tcp, websocket};
 #[cfg(not(target_os = "unknown"))]
 use async_std::task;
 
+#[cfg(all(target_arch = "wasm32", test))]
+mod test;
+
 // This is lifted from the rust libp2p-rs gossipsub and massaged to work with wasm.
 // The "glue" to get messages from the browser injected into this service isn't done yet.
 pub fn service(
