@@ -2,7 +2,7 @@
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png" />
     <!-- <HelloWorld msg="Welcome to Your Vue.js App" /> -->
-    <button @click="woo">Do a Woo!</button>
+    <button @click="connect">Connect</button>
   </div>
 </template>
 
@@ -16,8 +16,8 @@ export default {
   //   HelloWorld
   // },
   methods: {
-    async woo() {
-      console.log("woo");
+    async connect() {
+      console.log("connect");
       console.log(this.$wasm);
 
       const client = await this.$wasm.start_client(

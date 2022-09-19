@@ -37,7 +37,7 @@ On a different shell console:
 ./scripts/run-backend.sh
 ```
 Once the app is running open http://localhost:8080 in a browser (tested on Chrome)
-and click on `Do woo`.
+and click on `Connect`.
 
 This will trigger the connection from the browser to the backend node, you will
 start seeing log entries about the interaction in the backend node shell console
