@@ -2,6 +2,8 @@
 
 # libp2p-poc
 
+Based on https://github.com/shazow/rnges.us/tree/feature/vue-setup/wasm-net
+
 Connectivity tests between libp2p nodes: browser <-> desktop, browser <-> browser.
 
 ## Prerrequisites
