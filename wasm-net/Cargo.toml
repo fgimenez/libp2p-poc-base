@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 version = "0.49.0"
 path = "../libp2p"
 default-features = false
-features = ["websocket", "mplex", "yamux", "noise", "ping", "wasm-ext", "tcp-async-io", "dns-async-std", "dns-async-std"]
+features = ["websocket", "mplex", "yamux", "noise", "ping", "wasm-ext", "tcp-async-io", "dns-async-std", "dns-async-std", "wasm-browser"]
 
 [dependencies]
 log = "0.4.8"

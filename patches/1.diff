@@ -1,5 +1,31 @@
+Submodule libp2p contains modified content
+diff --git a/libp2p/Cargo.toml b/libp2p/Cargo.toml
+index 3f828805..32388d18 100644
+--- a/libp2p/Cargo.toml
++++ b/libp2p/Cargo.toml
+@@ -57,6 +57,9 @@ pnet = ["dep:libp2p-pnet"]
+ relay = ["dep:libp2p-relay", "libp2p-metrics?/relay"]
+ request-response = ["dep:libp2p-request-response"]
+ rendezvous = ["dep:libp2p-rendezvous"]
++rsa = ["libp2p-core/rsa"]
++secp256k1 = ["libp2p-core/secp256k1"]
++serde = ["libp2p-core/serde", "libp2p-kad?/serde", "libp2p-gossipsub?/serde"]
+ tcp-async-io = ["dep:libp2p-tcp", "libp2p-tcp?/async-io"]
+ tcp-tokio = ["dep:libp2p-tcp", "libp2p-tcp?/tokio"]
+ uds = ["dep:libp2p-uds"]
+@@ -65,9 +68,7 @@ wasm-ext = ["dep:libp2p-wasm-ext"]
+ wasm-ext-websocket = ["wasm-ext", "libp2p-wasm-ext?/websocket"]
+ websocket = ["dep:libp2p-websocket"]
+ yamux = ["dep:libp2p-yamux"]
+-secp256k1 = ["libp2p-core/secp256k1"]
+-rsa = ["libp2p-core/rsa"]
+-serde = ["libp2p-core/serde", "libp2p-kad?/serde", "libp2p-gossipsub?/serde"]
++wasm-browser = ["libp2p-core/wasm-browser", "libp2p-ping?/wasm-browser", "libp2p-swarm/wasm-browser"]
+ 
+ [package.metadata.docs.rs]
+ all-features = true
 diff --git a/libp2p/core/Cargo.toml b/libp2p/core/Cargo.toml
-index 0970b3e..40c04fa 100644
+index 0970b3e7..73169fb2 100644
 --- a/libp2p/core/Cargo.toml
 +++ b/libp2p/core/Cargo.toml
 @@ -38,6 +38,7 @@ unsigned-varint = "0.7"
@@ -7,35 +33,49 @@ index 0970b3e..40c04fa 100644
  zeroize = "1"
  serde = { version = "1", optional = true, features = ["derive"] }
 +wasm-timer = "0.2.5"
-
+ 
  [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
  ring = { version = "0.16.9", features = ["alloc", "std"], default-features = false, optional = true}
+@@ -64,6 +65,7 @@ secp256k1 = [ "libsecp256k1" ]
+ ecdsa = [ "p256" ]
+ rsa = [ "dep:ring" ]
+ serde = ["multihash/serde-codec", "dep:serde"]
++wasm-browser = []
+ 
+ [[bench]]
+ name = "peer_id"
 diff --git a/libp2p/core/src/transport/timeout.rs b/libp2p/core/src/transport/timeout.rs
-index 5c3867b..d20d860 100644
+index 5c3867b3..98efc4fe 100644
 --- a/libp2p/core/src/transport/timeout.rs
 +++ b/libp2p/core/src/transport/timeout.rs
-@@ -29,8 +29,8 @@ use crate::{
+@@ -29,8 +29,11 @@ use crate::{
      Multiaddr, Transport,
  };
  use futures::prelude::*;
--use futures_timer::Delay;
++#[cfg(not(feature = "wasm-browser"))]
+ use futures_timer::Delay;
  use std::{error, fmt, io, pin::Pin, task::Context, task::Poll, time::Duration};
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::Delay;
-
+ 
  /// A `TransportTimeout` is a `Transport` that wraps another `Transport` and adds
  /// timeouts to all inbound and outbound connection attempts.
-@@ -175,7 +175,8 @@ where
-
+@@ -175,7 +178,13 @@ where
+ 
          match Pin::new(&mut this.timer).poll(cx) {
              Poll::Pending => Poll::Pending,
--            Poll::Ready(()) => Poll::Ready(Err(TransportTimeoutError::Timeout)),
++            #[cfg(not(feature = "wasm-browser"))]
+             Poll::Ready(()) => Poll::Ready(Err(TransportTimeoutError::Timeout)),
++            #[cfg(feature = "wasm-browser")]
 +            Poll::Ready(Ok(_)) => Poll::Ready(Err(TransportTimeoutError::Timeout)),
++            #[cfg(feature = "wasm-browser")]
++            // TODO: properly check returned errors
 +            Poll::Ready(Err(..)) => Poll::Ready(Err(TransportTimeoutError::Timeout)),
          }
      }
  }
 diff --git a/libp2p/protocols/ping/Cargo.toml b/libp2p/protocols/ping/Cargo.toml
-index aa2b596..3e5da4f 100644
+index aa2b596d..4e90f98a 100644
 --- a/libp2p/protocols/ping/Cargo.toml
 +++ b/libp2p/protocols/ping/Cargo.toml
 @@ -19,6 +19,7 @@ libp2p-swarm = { version = "0.39.0", path = "../../swarm" }
@@ -43,55 +83,74 @@ index aa2b596..3e5da4f 100644
  rand = "0.7.2"
  void = "1.0"
 +wasm-timer = "0.2.5"
-
+ 
  [dev-dependencies]
  async-std = "1.6.2"
+@@ -27,3 +28,6 @@ libp2p-noise = { path = "../../transports/noise" }
+ libp2p-yamux = { path = "../../muxers/yamux" }
+ libp2p-mplex = { path = "../../muxers/mplex" }
+ quickcheck = "0.9.0"
++
++[features]
++wasm-browser = []
+\ No newline at end of file
 diff --git a/libp2p/protocols/ping/src/handler.rs b/libp2p/protocols/ping/src/handler.rs
-index f0e71fb..73e12ac 100644
+index f0e71fb0..aa004dc0 100644
 --- a/libp2p/protocols/ping/src/handler.rs
 +++ b/libp2p/protocols/ping/src/handler.rs
-@@ -21,7 +21,6 @@
+@@ -21,6 +21,7 @@
  use crate::{protocol, PROTOCOL_NAME};
  use futures::future::BoxFuture;
  use futures::prelude::*;
--use futures_timer::Delay;
++#[cfg(not(feature = "wasm-browser"))]
+ use futures_timer::Delay;
  use libp2p_core::upgrade::ReadyUpgrade;
  use libp2p_core::{upgrade::NegotiationError, UpgradeError};
- use libp2p_swarm::{
-@@ -37,6 +36,7 @@ use std::{
+@@ -37,6 +38,8 @@ use std::{
      time::Duration,
  };
  use void::Void;
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::Delay;
-
+ 
  /// The configuration for outbound pings.
  #[derive(Debug, Clone)]
-@@ -357,7 +357,7 @@ impl ConnectionHandler for Handler {
+@@ -357,10 +360,16 @@ impl ConnectionHandler for Handler {
                          self.outbound = Some(PingState::Idle(stream));
                          break;
                      }
--                    Poll::Ready(()) => {
-+                    Poll::Ready(..) => {
++                    #[cfg(not(feature = "wasm-browser"))]
+                     Poll::Ready(()) => {
                          self.timer.reset(self.config.timeout);
                          self.outbound = Some(PingState::Ping(protocol::send_ping(stream).boxed()));
                      }
++                    #[cfg(feature = "wasm-browser")]
++                    Poll::Ready(..) => {
++                        self.timer.reset(self.config.timeout);
++                        self.outbound = Some(PingState::Ping(protocol::send_ping(stream).boxed()));
++                    }
+                 },
+                 Some(PingState::OpenStream) => {
+                     self.outbound = Some(PingState::OpenStream);
 diff --git a/libp2p/protocols/ping/src/protocol.rs b/libp2p/protocols/ping/src/protocol.rs
-index 3c44adc..63d8a18 100644
+index 3c44adcd..86b5d806 100644
 --- a/libp2p/protocols/ping/src/protocol.rs
 +++ b/libp2p/protocols/ping/src/protocol.rs
-@@ -19,9 +19,9 @@
+@@ -19,9 +19,12 @@
  // DEALINGS IN THE SOFTWARE.
-
+ 
  use futures::prelude::*;
--use instant::Instant;
++#[cfg(not(feature = "wasm-browser"))]
+ use instant::Instant;
  use rand::{distributions, prelude::*};
  use std::{io, time::Duration};
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::Instant;
-
+ 
  pub const PROTOCOL_NAME: &[u8] = b"/ipfs/ping/1.0.0";
-
+ 
 diff --git a/libp2p/swarm/Cargo.toml b/libp2p/swarm/Cargo.toml
-index a22b114..a7abf6f 100644
+index a22b114f..4c303e10 100644
 --- a/libp2p/swarm/Cargo.toml
 +++ b/libp2p/swarm/Cargo.toml
 @@ -23,6 +23,7 @@ rand = "0.7"
@@ -99,95 +158,135 @@ index a22b114..a7abf6f 100644
  thiserror = "1.0"
  void = "1"
 +wasm-timer = "0.2.5"
-
+ 
  [dev-dependencies]
  async-std = { version = "1.6.2", features = ["attributes"] }
+@@ -33,3 +34,6 @@ libp2p-noise = { path = "../transports/noise" }
+ libp2p-tcp = { path = "../transports/tcp" }
+ quickcheck = "0.9.0"
+ rand = "0.7.2"
++
++[features]
++wasm-browser = []
+\ No newline at end of file
 diff --git a/libp2p/swarm/src/connection/handler_wrapper.rs b/libp2p/swarm/src/connection/handler_wrapper.rs
-index 03d09b3..9841276 100644
+index 03d09b3f..f85dd587 100644
 --- a/libp2p/swarm/src/connection/handler_wrapper.rs
 +++ b/libp2p/swarm/src/connection/handler_wrapper.rs
-@@ -27,8 +27,6 @@ use crate::IntoConnectionHandler;
-
+@@ -27,7 +27,9 @@ use crate::IntoConnectionHandler;
+ 
  use futures::prelude::*;
  use futures::stream::FuturesUnordered;
--use futures_timer::Delay;
--use instant::Instant;
++#[cfg(not(feature = "wasm-browser"))]
+ use futures_timer::Delay;
++#[cfg(not(feature = "wasm-browser"))]
+ use instant::Instant;
  use libp2p_core::{
      muxing::SubstreamBox,
-     upgrade::{self, InboundUpgradeApply, OutboundUpgradeApply, UpgradeError},
-@@ -36,6 +34,7 @@ use libp2p_core::{
+@@ -36,6 +38,8 @@ use libp2p_core::{
  };
  use libp2p_core::{ConnectedPoint, PeerId};
  use std::{error, fmt, pin::Pin, task::Context, task::Poll, time::Duration};
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::{Delay, Instant};
-
+ 
  /// A wrapper for an underlying [`ConnectionHandler`].
  ///
-@@ -146,7 +145,8 @@ where
-
+@@ -146,6 +150,7 @@ where
+ 
      fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
          match self.timeout.poll_unpin(cx) {
--            Poll::Ready(()) => {
-+            // TODO: check for error
-+            Poll::Ready(..) => {
++            #[cfg(not(feature = "wasm-browser"))]
+             Poll::Ready(()) => {
                  return Poll::Ready((
                      self.user_data
-                         .take()
-@@ -154,7 +154,6 @@ where
+@@ -154,6 +159,16 @@ where
                      Err(ConnectionHandlerUpgrErr::Timeout),
                  ))
              }
--
++            #[cfg(feature = "wasm-browser")]
++            // TODO: check for error
++            Poll::Ready(..) => {
++                return Poll::Ready((
++                    self.user_data
++                        .take()
++                        .expect("Future not to be polled again once ready."),
++                    Err(ConnectionHandlerUpgrErr::Timeout),
++                ))
++            }
+ 
              Poll::Pending => {}
          }
-
-@@ -400,15 +399,13 @@ where
+@@ -396,6 +411,7 @@ where
+ 
+         // Ask the handler whether it wants the connection (and the handler itself)
+         // to be kept alive, which determines the planned shutdown, if any.
++        #[cfg(not(feature = "wasm-browser"))]
+         match (&mut self.shutdown, self.handler.connection_keep_alive()) {
              (Shutdown::Later(timer, deadline), KeepAlive::Until(t)) => {
                  if *deadline != t {
-                     *deadline = t;
--                    if let Some(dur) = deadline.checked_duration_since(Instant::now()) {
--                        timer.reset(dur)
--                    }
-+                    let dur = deadline.duration_since(Instant::now());
-+                    timer.reset(dur)
+@@ -403,13 +419,29 @@ where
+                     if let Some(dur) = deadline.checked_duration_since(Instant::now()) {
+                         timer.reset(dur)
+                     }
++                    timer.reset(deadline.duration_since(Instant::now()))
                  }
              }
              (_, KeepAlive::Until(t)) => {
--                if let Some(dur) = t.checked_duration_since(Instant::now()) {
+                 if let Some(dur) = t.checked_duration_since(Instant::now()) {
 -                    self.shutdown = Shutdown::Later(Delay::new(dur), t)
--                }
-+                let dur = t.duration_since(Instant::now());
-+                self.shutdown = Shutdown::Later(Delay::new(dur), t)
++                    self.shutdown = Shutdown::Later(Delay::new(dur), t);
++                }
++                self.shutdown = Shutdown::Later(Delay::new(t.duration_since(Instant::now())), t)
++            }
++            (_, KeepAlive::No) => self.shutdown = Shutdown::Asap,
++            (_, KeepAlive::Yes) => self.shutdown = Shutdown::None,
++        };
++        #[cfg(feature = "wasm-browser")]
++        match (&mut self.shutdown, self.handler.connection_keep_alive()) {
++            (Shutdown::Later(timer, deadline), KeepAlive::Until(t)) => {
++                if *deadline != t {
++                    *deadline = t;
++                    timer.reset(deadline.duration_since(Instant::now()))
+                 }
              }
++            (_, KeepAlive::Until(t)) => {
++                self.shutdown = Shutdown::Later(Delay::new(t.duration_since(Instant::now())), t)
++            }
              (_, KeepAlive::No) => self.shutdown = Shutdown::Asap,
              (_, KeepAlive::Yes) => self.shutdown = Shutdown::None,
+         };
 diff --git a/libp2p/swarm/src/handler.rs b/libp2p/swarm/src/handler.rs
-index c6125f2..b01e5d2 100644
+index c6125f27..a92fef1e 100644
 --- a/libp2p/swarm/src/handler.rs
 +++ b/libp2p/swarm/src/handler.rs
-@@ -49,9 +49,9 @@ mod select;
-
+@@ -49,9 +49,12 @@ mod select;
+ 
  pub use crate::upgrade::{InboundUpgradeSend, OutboundUpgradeSend, SendWrapper, UpgradeInfoSend};
-
--use instant::Instant;
+ 
++#[cfg(not(feature = "wasm-browser"))]
+ use instant::Instant;
  use libp2p_core::{upgrade::UpgradeError, ConnectedPoint, Multiaddr, PeerId};
  use std::{cmp::Ordering, error, fmt, task::Context, task::Poll, time::Duration};
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::Instant;
-
+ 
  pub use dummy::DummyConnectionHandler;
  pub use map_in::MapInEvent;
 diff --git a/libp2p/swarm/src/handler/one_shot.rs b/libp2p/swarm/src/handler/one_shot.rs
-index 5db6b4d..ce0c0ea 100644
+index 5db6b4d1..0e1dbeab 100644
 --- a/libp2p/swarm/src/handler/one_shot.rs
 +++ b/libp2p/swarm/src/handler/one_shot.rs
-@@ -23,9 +23,9 @@ use crate::handler::{
+@@ -23,9 +23,12 @@ use crate::handler::{
      SubstreamProtocol,
  };
  use crate::upgrade::{InboundUpgradeSend, OutboundUpgradeSend};
--use instant::Instant;
++#[cfg(not(feature = "wasm-browser"))]
+ use instant::Instant;
  use smallvec::SmallVec;
  use std::{error, fmt::Debug, task::Context, task::Poll, time::Duration};
++#[cfg(feature = "wasm-browser")]
 +use wasm_timer::Instant;
-
+ 
  /// A [`ConnectionHandler`] that opens a new substream for each request.
  // TODO: Debug
