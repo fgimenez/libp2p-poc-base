@@ -873,10 +873,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
 dependencies = [
  "cfg-if 1.0.0",
- "js-sys",
  "libc",
  "wasi 0.9.0+wasi-snapshot-preview1",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -2794,7 +2792,7 @@ dependencies = [
  "once_cell",
  "parking_lot_core 0.8.0",
  "rand 0.6.5",
- "rand 0.7.3",
+ "rand 0.8.5",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",

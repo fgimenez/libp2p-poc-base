@@ -36,7 +36,7 @@ console_log = { version = "0.1.2", optional = true }
 # Side effects and Replacements
 clear_on_drop = { version = "0.2.3", features = ["no_cc"] }
 rand6 = { package = "rand", version = "0.6", features = ["wasm-bindgen"], optional = true }
-rand = { version = "0.7", features = ["wasm-bindgen"], optional = true }
+rand = { version = "0.8.5", optional = true }
 futures-timer = { version = "3.0.1", features = ["wasm-bindgen"], optional = true }
 chrono = { version = "0.4", features = ["wasmbind"], optional = true }
 getrandom = { version = "0.2", features = ["js"] }
@@ -45,22 +45,22 @@ getrandom = { version = "0.2", features = ["js"] }
 parking_lot_core = "=0.8.0"
 
 [dev-dependencies]
-wasm-bindgen-test =  { version = "0.3" }
+wasm-bindgen-test =  "0.3"
 wasm-logger = "0.2.0"
 once_cell = "1.13.1"
 
 [features]
 default = [
   "native",
-  "libp2p-wasm-ext"
+  "libp2p-wasm-ext",
+  "wasm-bindgen",
+	"wasm-bindgen-futures",
 ]
 native = [
   "async-std",
   "env_logger",
 ]
 browser = [
-	"wasm-bindgen",
-	"wasm-bindgen-futures",
   "console_log",
   "console_error_panic_hook",
   "rand6",
