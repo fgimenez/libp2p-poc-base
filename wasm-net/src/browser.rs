@@ -50,32 +50,7 @@ fn run(dial: String) -> impl Future<Output = ()> {
     future::poll_fn(move |cx| loop {
         match swarm.poll_next_unpin(cx) {
             Poll::Ready(Some(event)) => match event {
-                SwarmEvent::NewListenAddr { address, .. } => {
-                    log::info!("Listening on {:?}", address);
-                }
                 SwarmEvent::Behaviour(event) => log::info!("{:?}", event),
-                SwarmEvent::IncomingConnection {
-                    local_addr,
-                    send_back_addr,
-                } => {
-                    log::info!(
-                        "Incoming connection local_addr: {} send_back_addr: {}",
-                        local_addr,
-                        send_back_addr
-                    )
-                }
-                SwarmEvent::IncomingConnectionError {
-                    local_addr,
-                    send_back_addr,
-                    error,
-                } => {
-                    log::info!(
-                        "Incoming err local_addr: {} send_back_addr: {}, err: {}",
-                        local_addr,
-                        send_back_addr,
-                        error
-                    )
-                }
                 _ => {}
             },
             Poll::Ready(None) => return Poll::Ready(()),
