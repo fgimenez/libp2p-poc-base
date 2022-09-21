@@ -23,19 +23,25 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 # Install yarn
 ```
 
-## Sync submodules and apply patches
-```sh
-scripts/apply-patches.sh
+## Running automated tests:
+```
+./scripts/run-tests.sh
 ```
 
-## Backend node
+## Running the example app locally
+### Sync submodules and apply patches
+```sh
+./scripts/apply-patches.sh
+```
+
+### Backend node
 On a shell console run:
 ```sh
 ./scripts/run-backend.sh
 ```
 You wil see the logs from the desktop node.
 
-## Frontend
+### Frontend
 On a different shell console:
 ```sh
 ./scripts/run-backend.sh
