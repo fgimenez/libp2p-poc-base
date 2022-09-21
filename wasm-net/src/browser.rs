@@ -45,7 +45,7 @@ async fn start_inner(
 
 fn run(dial: String) -> impl Future<Output = ()> {
     let transport = ExtTransport::new(ffi::websocket_transport());
-    let mut swarm = crate::service(Some(transport), Some(dial));
+    let mut swarm = crate::service(Some(transport), Some(dial), None);
 
     future::poll_fn(move |cx| loop {
         match swarm.poll_next_unpin(cx) {

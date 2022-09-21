@@ -22,6 +22,7 @@ mod test;
 pub fn service(
     wasm_external_transport: Option<wasm_ext::ExtTransport>,
     dial: Option<String>,
+    port: Option<u16>,
 ) -> libp2p::swarm::Swarm<libp2p::ping::Behaviour> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
@@ -69,14 +70,18 @@ pub fn service(
         libp2p::Swarm::new(transport, behaviour, local_peer_id)
     };
 
-    // Listen on all interfaces on 38615.  Websockt can't receive incoming connections
-    // on browser (oops?)
+    // Websockets can't receive incoming connections on browser
+    #[cfg(not(target_os = "unknown"))]
+    let actual_port = match port {
+        Some(p) => p,
+        None => 38615,
+    };
     #[cfg(not(target_os = "unknown"))]
     libp2p::Swarm::listen_on(
         &mut swarm,
         Multiaddr::empty()
             .with(Protocol::from(Ipv4Addr::UNSPECIFIED))
-            .with(Protocol::Tcp(38615))
+            .with(Protocol::Tcp(actual_port))
             .with(Protocol::Ws(Cow::Borrowed("/"))),
     )
     .unwrap();

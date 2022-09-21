@@ -8,7 +8,7 @@ fn main() {
     Builder::from_env(Env::default().default_filter_or("info")).init();
     let to_dial = std::env::args().nth(1);
 
-    let mut swarm = wasm_net::service(None, to_dial);
+    let mut swarm = wasm_net::service(None, to_dial, None);
 
     let mut listening = false;
 

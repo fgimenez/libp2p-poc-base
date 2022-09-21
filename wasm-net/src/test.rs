@@ -21,9 +21,11 @@ fn browser_desktop_base() {
     });
 
     let transport = ExtTransport::new(ffi::websocket_transport());
+    let port = 38615;
     let mut swarm = crate::service(
         Some(transport),
-        Some(String::from("/ip4/127.0.0.1/tcp/38615/ws")),
+        Some(String::from(format!("/ip4/127.0.0.1/tcp/{}/ws", port))),
+        Some(port),
     );
 
     //let (sender, receiver) = mpsc::channel();
