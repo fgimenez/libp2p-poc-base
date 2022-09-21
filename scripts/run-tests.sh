@@ -13,7 +13,7 @@ main() {
         BOOTNODE_PID=$!
         trap 'kill -9 ${BOOTNODE_PID}' EXIT
 
-        cd wasm-net && wasm-pack test --chrome --headless
+        cd wasm-net && wasm-pack test --chrome --headless -- --features browser
     }
 }
 
