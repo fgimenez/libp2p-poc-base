@@ -3,8 +3,6 @@ use libp2p::ping::{Event as PingEvent, Success as PingEventSuccess};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p_wasm_ext::{ffi, ExtTransport};
 use once_cell::unsync::OnceCell;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::mpsc;
 use std::task::Poll;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -34,7 +32,7 @@ async fn browser_desktop_base() {
                 SwarmEvent::Behaviour(PingEvent { result, .. }) => match result {
                     Ok(PingEventSuccess::Ping { .. }) => {
                         sender.send(1).unwrap();
-                        return Poll::Ready(());
+                        break Poll::Ready(());
                     }
                     _ => {}
                 },
