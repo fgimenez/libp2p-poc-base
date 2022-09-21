@@ -72,20 +72,20 @@ pub fn service(
 
     // Websockets can't receive incoming connections on browser
     #[cfg(not(target_os = "unknown"))]
-    let actual_port = match port {
-        Some(p) => p,
-        None => 38615,
-    };
-    #[cfg(not(target_os = "unknown"))]
-    libp2p::Swarm::listen_on(
-        &mut swarm,
-        Multiaddr::empty()
-            .with(Protocol::from(Ipv4Addr::UNSPECIFIED))
-            .with(Protocol::Tcp(actual_port))
-            .with(Protocol::Ws(Cow::Borrowed("/"))),
-    )
-    .unwrap();
-
+    {
+        let actual_port = match port {
+            Some(p) => p,
+            None => 38615,
+        };
+        libp2p::Swarm::listen_on(
+            &mut swarm,
+            Multiaddr::empty()
+                .with(Protocol::from(Ipv4Addr::UNSPECIFIED))
+                .with(Protocol::Tcp(actual_port))
+                .with(Protocol::Ws(Cow::Borrowed("/"))),
+        )
+        .unwrap();
+    }
     if let Some(addr) = dial {
         let remote: Multiaddr = addr.parse().unwrap();
         swarm.dial(remote).unwrap();
