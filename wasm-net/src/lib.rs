@@ -1,17 +1,12 @@
 #[cfg(feature = "browser")]
 mod browser;
 
-use futures::prelude::*;
 use libp2p::core::transport::OptionalTransport;
 use libp2p::multiaddr::Protocol;
 use libp2p::ping::{Ping, PingConfig};
-use libp2p::swarm::Swarm;
-use libp2p::{
-    core, identity, mplex, noise, swarm::SwarmEvent, wasm_ext, yamux, Multiaddr, PeerId, Transport,
-};
+use libp2p::{core, identity, mplex, noise, wasm_ext, yamux, Multiaddr, PeerId, Transport};
 use std::borrow::Cow;
 use std::net::Ipv4Addr;
-use std::task::Poll;
 
 #[cfg(not(target_os = "unknown"))]
 use libp2p::{dns, tcp, websocket};
@@ -27,7 +22,7 @@ mod test;
 pub fn service(
     wasm_external_transport: Option<wasm_ext::ExtTransport>,
     dial: Option<String>,
-) -> impl Future<Output = ()> {
+) -> libp2p::swarm::Swarm<libp2p::ping::Behaviour> {
     // Create a random PeerId
     let local_key = identity::Keypair::generate_ed25519();
     let local_peer_id = PeerId::from(local_key.public());
@@ -92,49 +87,5 @@ pub fn service(
         println!("Dialed {}", addr)
     }
 
-    let mut listening = false;
-
-    future::poll_fn(move |cx| loop {
-        match swarm.poll_next_unpin(cx) {
-            Poll::Ready(Some(event)) => match event {
-                SwarmEvent::NewListenAddr { address, .. } => {
-                    log::info!("Listening on {:?}", address);
-                }
-                SwarmEvent::Behaviour(event) => log::info!("{:?}", event),
-                SwarmEvent::IncomingConnection {
-                    local_addr,
-                    send_back_addr,
-                } => {
-                    log::info!(
-                        "Incoming connection local_addr: {} send_back_addr: {}",
-                        local_addr,
-                        send_back_addr
-                    )
-                }
-                SwarmEvent::IncomingConnectionError {
-                    local_addr,
-                    send_back_addr,
-                    error,
-                } => {
-                    log::info!(
-                        "Incoming err local_addr: {} send_back_addr: {}, err: {}",
-                        local_addr,
-                        send_back_addr,
-                        error
-                    )
-                }
-                _ => {}
-            },
-            Poll::Ready(None) => return Poll::Ready(()),
-            Poll::Pending => {
-                if !listening {
-                    for addr in Swarm::listeners(&swarm) {
-                        log::info!("Listening on {}", addr);
-                        listening = true;
-                    }
-                }
-                return Poll::Pending;
-            }
-        }
-    })
+    return swarm;
 }

@@ -2,7 +2,10 @@ use std::str::FromStr;
 
 use wasm_bindgen::prelude::*;
 
+use futures::prelude::*;
+use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p_wasm_ext::{ffi, ExtTransport};
+use std::task::Poll;
 
 pub use console_error_panic_hook::set_once as set_console_error_panic_hook;
 pub use console_log::init_with_level as init_console_log;
@@ -35,13 +38,48 @@ async fn start_inner(
     console_error_panic_hook::set_once();
     init_console_log(log::Level::from_str(&log_level)?)?;
 
-    let transport = ExtTransport::new(ffi::websocket_transport());
-
-    // somehow rig an mpsc sender accessible by the browser piped to the service
-    // the best way is probably to accept a future::Stream and by default, the service will poll that for any incoming
-    // blocks of messages
-    // let (rpc_send_tx, mut rpc_send_rx) = mpsc::unbounded::<Message>();
-    wasm_bindgen_futures::spawn_local(crate::service(Some(transport), Some(dial)));
+    wasm_bindgen_futures::spawn_local(run(dial));
 
     Ok(Client {})
+}
+
+fn run(dial: String) -> impl Future<Output = ()> {
+    let transport = ExtTransport::new(ffi::websocket_transport());
+    let mut swarm = crate::service(Some(transport), Some(dial));
+
+    future::poll_fn(move |cx| loop {
+        match swarm.poll_next_unpin(cx) {
+            Poll::Ready(Some(event)) => match event {
+                SwarmEvent::NewListenAddr { address, .. } => {
+                    log::info!("Listening on {:?}", address);
+                }
+                SwarmEvent::Behaviour(event) => log::info!("{:?}", event),
+                SwarmEvent::IncomingConnection {
+                    local_addr,
+                    send_back_addr,
+                } => {
+                    log::info!(
+                        "Incoming connection local_addr: {} send_back_addr: {}",
+                        local_addr,
+                        send_back_addr
+                    )
+                }
+                SwarmEvent::IncomingConnectionError {
+                    local_addr,
+                    send_back_addr,
+                    error,
+                } => {
+                    log::info!(
+                        "Incoming err local_addr: {} send_back_addr: {}, err: {}",
+                        local_addr,
+                        send_back_addr,
+                        error
+                    )
+                }
+                _ => {}
+            },
+            Poll::Ready(None) => return Poll::Ready(()),
+            Poll::Pending => return Poll::Pending,
+        }
+    })
 }
