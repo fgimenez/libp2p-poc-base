@@ -73,9 +73,10 @@ pub fn service(
     // Websockets can't receive incoming connections on browser
     #[cfg(not(target_os = "unknown"))]
     {
+        const DEFAULT_PORT: u16 = 38615;
         let actual_port = match port {
             Some(p) => p,
-            None => 38615,
+            None => DEFAULT_PORT,
         };
         libp2p::Swarm::listen_on(
             &mut swarm,
