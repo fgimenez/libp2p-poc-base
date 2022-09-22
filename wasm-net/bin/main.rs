@@ -1,14 +1,25 @@
 use async_std::task;
+use clap::Parser;
 use env_logger::{Builder, Env};
 use futures::prelude::*;
 use libp2p::swarm::{Swarm, SwarmEvent};
 use std::task::Poll;
 
+#[derive(Parser, Debug)]
+#[clap(name = "libp2p-poc")]
+struct Opt {
+    #[clap(long)]
+    to_dial: Option<String>,
+
+    #[clap(long)]
+    port: Option<u16>,
+}
+
 fn main() {
     Builder::from_env(Env::default().default_filter_or("info")).init();
-    let to_dial = std::env::args().nth(1);
 
-    let mut swarm = wasm_net::service(None, to_dial, None);
+    let opt = Opt::parse();
+    let mut swarm = wasm_net::service(None, opt.to_dial, opt.port);
 
     let mut listening = false;
 

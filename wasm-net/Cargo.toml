@@ -40,6 +40,7 @@ rand = { version = "0.7", features = ["wasm-bindgen"], optional = true }
 futures-timer = { version = "3.0.1", features = ["wasm-bindgen"], optional = true }
 chrono = { version = "0.4", features = ["wasmbind"], optional = true }
 getrandom = { version = "0.2", features = ["js"] }
+clap = { version = "3.2.22", features = ["derive"] }
 # Prevent js error: https://github.com/rustwasm/wasm-bindgen/issues/2215#issuecomment-1131707941
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 parking_lot_core = "=0.8.0"
