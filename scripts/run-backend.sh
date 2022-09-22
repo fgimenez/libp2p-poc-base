@@ -5,7 +5,7 @@ BASE_DIR="${SCRIPT_DIR}/.."
 
 main() {
     {
-        cd "${BASE_DIR}" && ./scripts/compile-backend.sh
+        cd "${BASE_DIR}" && ./scripts/build-backend.sh
 
         RUST_LOG=debug wasm-net/target/debug/bootnode
     }
