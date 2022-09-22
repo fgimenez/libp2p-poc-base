@@ -7,7 +7,7 @@ main() {
     {
         cd "${BASE_DIR}"
         ./scripts/apply-patches.sh
-        ./scripts/compile-backend.sh
+        ./scripts/build-backend.sh
 
         ./wasm-net/target/debug/bootnode &
         BOOTNODE_PID=$!
